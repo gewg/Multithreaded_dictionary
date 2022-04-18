@@ -61,7 +61,7 @@ public class ClientHandleADD extends ClientHandleRequest{
         } catch(IOException e) {
             String flag = "FAIL";
             String outputContent = "";
-            String outputTerminal = "Add failed: Communication between client and server failed. Please contact the developer.";
+            String outputTerminal = "Add failed: Communication between client and server failed. Please check the network or contact the Server's administrator.";
             return createResponse(flag, outputContent, outputTerminal);
         } catch (ClassNotFoundException e) {
             String flag = "FAIL";
@@ -71,7 +71,7 @@ public class ClientHandleADD extends ClientHandleRequest{
         } catch (NullPointerException e){
             String flag = "FAIL";
             String outputContent = "";
-            String outputTerminal = "Add failed: Can not connect the server. Please check the network or contact the developer.";
+            String outputTerminal = "Add failed: Can not connect the server. Please check the network, server address, server port number or contact the developer.";
             return createResponse(flag, outputContent, outputTerminal);
         }
     }

@@ -9,31 +9,40 @@ public class Client {
 	// the stream
 	static ObjectOutputStream objectOutputStream;
 	static ObjectInputStream objectInputStream;
+	static ClientUI ui;
 
 	public static void main(String[] args) {
-		// get the args
-		String serverAddr = args[0];
-		int serverPortNum = Integer.parseInt(args[1]);
+		// create and invoke the Client UI
+		ui = new ClientUI();
+		ui.start();
 
-		// initialize the client socket which connects to the server
-		Socket clientSocket = establishSocket(serverAddr, serverPortNum);
-
-		// initialize the stream
 		try {
+			// get the args
+			String serverAddr = args[0];
+			int serverPortNum = Integer.parseInt(args[1]);
+
+			// initialize the client socket which connects to the server
+			Socket clientSocket = establishSocket(serverAddr, serverPortNum);
+
+			// initialize the stream
+
 			OutputStream outputStream = clientSocket.getOutputStream();
 			InputStream inputStream = clientSocket.getInputStream();
 			// Client output first
 			objectOutputStream = new ObjectOutputStream(outputStream);
 			objectInputStream = new ObjectInputStream(inputStream);
-		}catch (IOException e){
-			System.out.print("Establish the stream failed: IOException. Please contact the developer.\n");
-		} catch (NullPointerException e) {
-			System.out.print("Establish the stream failed: NullPointerException. Please contact the developer.\n");
-		}
 
-		// create and invoke the Client UI
-		ClientUI ui = new ClientUI();
-		ui.start();
+		} catch (IOException e){
+			setUITer("Establish the socket failed: Can not connect to the server. Please check the port address, port number and network.");
+		} catch (NullPointerException e) {
+			setUITer("Establish the stream failed: Can not connect to the server. Please check the port address, port number and network.");
+		} catch (NumberFormatException e){
+			setUITer("Establish the stream failed: invalid port number. Please check the port address and port number.");
+		} catch (IllegalArgumentException e){
+			setUITer("Establish the stream failed: invalid port number. Please check the port address and port number.");
+		} catch (ArrayIndexOutOfBoundsException e){
+			setUITer("Establish the connection failed: Please enter the port address and port number.");
+		}
 	}
 
 
@@ -43,16 +52,11 @@ public class Client {
 	 *  @param serverPortNum the port number of server socket
 	 *  @return the client socket
 	 */
-	private static Socket establishSocket(String serverAddr, int serverPortNum) {
-		// the client socket
-		Socket clientSocket = null;
-		
+	private static Socket establishSocket(String serverAddr, int serverPortNum) throws IOException{
+
 		// establish the connection
-		try {
-			clientSocket = new Socket(serverAddr, serverPortNum);
-		} catch (IOException e) {
-			System.out.print("Establish Client Socket failed: IOException. Please contact the developer.\n");
-		}
+		Socket clientSocket = new Socket(serverAddr, serverPortNum);
+
 		return clientSocket;
 	}
 
@@ -94,5 +98,13 @@ public class Client {
 		}
 
 		return result;
+	}
+
+	/**
+	 * Append string to the UI window's request area
+	 * @param appendString
+	 */
+	public static void setUITer(String appendString){
+		ui.getOutputTerminal().setText(appendString);
 	}
 }

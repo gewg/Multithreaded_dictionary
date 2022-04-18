@@ -5,11 +5,15 @@ import com.alibaba.fastjson.JSONObject;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Server {
+
+	// mark whether the system is regular
+	static boolean systemSucc = true;
 
 	// the cut-off line in UI's terminal
 	final static String CUT_OFF = "\n------------------------------------------------------------\n";
@@ -18,7 +22,7 @@ public class Server {
 	static ServerUI ui;
 
 	// the port number
-	static int portNum;
+	static int portNum = 0;
 	// the file path
 	static String filePath;
 	// the total number of client
@@ -28,51 +32,70 @@ public class Server {
 	static DataBase dataBase = new DataBase();
 	
 	public static void main(String[] args){
-
-		// set the arguments
-		portNum = Integer.parseInt(args[0]);
-		filePath = args[1];
-
 		// invoke the server UI
 		ui = new ServerUI();
 		ui.start();
 
-		// create the server socket
-		ServerSocket serverSocket = establishSocket(portNum);
-
-		// load dictionary
 		try {
-			loadFile();
-		} catch (FileNotFoundException e){
-			setUIReq("Load the dictionary failed: File can not be found");
-			setUIReq(CUT_OFF);
-		} catch (UnsupportedEncodingException e){
-			setUIReq("Load the dictionary failed: Unsupported encoding format");
-			setUIReq(CUT_OFF);
-		}
+			// set the arguments
+			portNum = Integer.parseInt(args[0]);
+			filePath = args[1];
 
-		// listen the request from the clients
-		while (true) {
+			// create the server socket
+			ServerSocket serverSocket = establishSocket(portNum);
 
-			// capture the client socket from request
-			Socket clientSocket = null;
+			// load dictionary
 			try {
-				clientSocket = serverSocket.accept();
-			} catch (IOException e) {
-				setUIReq("Connect with the incoming Client Socket failed: IOException");
+				loadFile();
+			} catch (FileNotFoundException e) {
+				setUIReq("Load the dictionary failed: File can not be found. A new dictionary file will be generated.");
 				setUIReq(CUT_OFF);
 			}
 
-			// add the number of clients
-			setClientNum(getClientNum() + 1);
-			// output to the UI
-			setUIReq(String.format("A new client '%s' connect the server.\nCurrent total number of clients:%d", clientSocket, getClientNum()));
-			setUIReq(CUT_OFF);
+			// listen the request from the clients
+			while (true) {
 
-			// establish a 'Thread-per-connection' type thread for the current client socket
-			SingleServerThread singleServerThread = new SingleServerThread(clientSocket);
-			// invoke the thread
-			singleServerThread.start();
+				// capture the client socket from request
+				Socket clientSocket = null;
+				try {
+					clientSocket = serverSocket.accept();
+				} catch (IOException e) {
+					setUIReq("Connect with the incoming Client Socket failed: IOException");
+					setUIReq(CUT_OFF);
+					systemSucc = false;
+				}
+
+				// add the number of clients
+				setClientNum(getClientNum() + 1);
+				// output to the UI
+				setUIReq(String.format("A new client '%s' connect the server.\nCurrent total number of clients:%d", clientSocket, getClientNum()));
+				setUIReq(CUT_OFF);
+
+				// establish a 'Thread-per-connection' type thread for the current client socket
+				SingleServerThread singleServerThread = new SingleServerThread(clientSocket);
+				// invoke the thread
+				singleServerThread.start();
+			}
+		} catch (NumberFormatException e){
+			setUIReq("Can not establish the server. Check the port number and restart the server.");
+			setUIReq(CUT_OFF);
+			systemSucc = false;
+		} catch (IllegalArgumentException e){
+			setUIReq("The port number is not valid. Notice that only 0-65536 can be port number. Check the port number and restart the server.");
+			setUIReq(CUT_OFF);
+			systemSucc = false;
+		} catch (NullPointerException e) {
+			setUIReq("Can not establish the server. Check the port number and restart the server.");
+			setUIReq(CUT_OFF);
+			systemSucc = false;
+		} catch (UnsupportedEncodingException e) {
+			setUIReq("Load the dictionary failed: Unsupported encoding format");
+			setUIReq(CUT_OFF);
+			systemSucc = false;
+		}  catch (ArrayIndexOutOfBoundsException e){
+			setUIReq("Can not establish the server. Please enter the port number, the path for dictionary file.");
+			setUIReq(CUT_OFF);
+			systemSucc = false;
 		}
 	}
 	
@@ -89,11 +112,16 @@ public class Server {
 		// establish the connection
 		try {
 			serverSocket = new ServerSocket(portNum);
+		} catch (UnknownHostException e) {
+			setUIReq("Establish the Server Socket failed: Unknown Host. Check the port number");
+			setUIReq(CUT_OFF);
+			systemSucc = false;
 		} catch (IOException e) {
 			setUIReq("Establish the Server Socket failed: IOException. Check the port number");
 			setUIReq(CUT_OFF);
+			systemSucc = false;
 		}
-		
+
 		return serverSocket;
 	}
 
@@ -305,10 +333,11 @@ public class Server {
 	 * @throws FileNotFoundException
 	 * @throws UnsupportedEncodingException
 	 */
-	public static void loadFile() throws FileNotFoundException, UnsupportedEncodingException {
+	public static void loadFile() throws FileNotFoundException, UnsupportedEncodingException, NullPointerException {
+		// get the file
+		File file = new File(filePath);
 
 		// initialize the io
-		File file = new File(filePath);
 		InputStreamReader inputStreamReader = new InputStreamReader(new FileInputStream(file), "UTF-8");
 		BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
 
@@ -327,6 +356,10 @@ public class Server {
 				inputStreamReader.close();
 				bufferedReader.close();
 			}
+		} catch (ArrayIndexOutOfBoundsException e){
+			setUIReq("The dictionary file's content is invalid. Please check it.");
+			setUIReq(CUT_OFF);
+			systemSucc = false;
 		} catch (IOException e){
 			// finish reading
 		}
@@ -335,39 +368,42 @@ public class Server {
 
 	/**
 	 * Store the dictionary into the file
-	 * @throws IOException
+	 * @throws IOException NullPointerException
 	 */
-	private static void writeFile(){
-
-		// initialize the io
-		try {
-			File file = new File(filePath);
-			BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(file));
-			// get the dictionary
-			ConcurrentHashMap<String, List<String>> dictionary = dataBase.getDictionary();
-			// write the dictionary into the file
-			for (Map.Entry<String, List<String>> entry : dictionary.entrySet()){
-				// get the word
-				String currWord = entry.getKey();
-				// get meanings
-				List<String> currMeaningsList = entry.getValue();
-				// transfer meanings into string
-				StringBuffer currMeaningsString = new StringBuffer();
-				for (String eachMeaning : currMeaningsList){
-					currMeaningsString.append(eachMeaning);
-					currMeaningsString.append(",");
-				}
-				// remove the last command
-				currMeaningsString = currMeaningsString.deleteCharAt(currMeaningsString.length()-1);
-				// write into the file
-				bufferedWriter.write(currWord + ":" + currMeaningsString + "\n");
-			}
-			bufferedWriter.flush();
-			bufferedWriter.close();
-		} catch (IOException e){
-			setUIReq("Store the dictionary failed: IOException");
+	private static void writeFile() throws IOException, NullPointerException{
+		// if there is error, the export can not be applied
+		if (systemSucc == false){
+			setUIReq("Export Failed: Please deal with the error above and restart the application.");
 			setUIReq(CUT_OFF);
+			return;
 		}
+		// initialize the io
+		File file = new File(filePath);
+		BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(file));
+		// get the dictionary
+		ConcurrentHashMap<String, List<String>> dictionary = dataBase.getDictionary();
+		// write the dictionary into the file
+		for (Map.Entry<String, List<String>> entry : dictionary.entrySet()) {
+			// get the word
+			String currWord = entry.getKey();
+			// get meanings
+			List<String> currMeaningsList = entry.getValue();
+			// transfer meanings into string
+			StringBuffer currMeaningsString = new StringBuffer();
+			for (String eachMeaning : currMeaningsList) {
+				currMeaningsString.append(eachMeaning);
+				currMeaningsString.append(",");
+			}
+			// remove the last command
+			currMeaningsString = currMeaningsString.deleteCharAt(currMeaningsString.length() - 1);
+			// write into the file
+			bufferedWriter.write(currWord + ":" + currMeaningsString + "\n");
+		}
+		bufferedWriter.flush();
+		bufferedWriter.close();
+		// notice the terminal
+		setUIReq("Export Successfully.");
+		setUIReq(CUT_OFF);
 	}
 
 
@@ -375,14 +411,29 @@ public class Server {
 	 * The API for other class to call the storing of dictionary
 	 */
 	public static void storeDictionary(){
-		writeFile();
-		setUIReq("Export Successfully.");
-		setUIReq(CUT_OFF);
+		// check the port number
+		if (portNum < 0 || portNum > 65536){
+			setUIReq("Store the dictionary failed: Invalid port number. Check the port number and restart the server.");
+			setUIReq(CUT_OFF);
+			return;
+		}
+
+		try {
+			writeFile();
+		} catch (IOException e){
+			setUIReq("Store the dictionary failed: Can not find the file.");
+			setUIReq(CUT_OFF);
+			systemSucc = false;
+		} catch (NullPointerException e){
+			setUIReq("Store the dictionary failed: Can not establish the server. Check the port number and restart the server.");
+			setUIReq(CUT_OFF);
+			systemSucc = false;
+		}
 	}
 
 	/**
 	 * Append string to the UI window's request area
-	 * @param appendString
+	 * @param appendString input string
 	 */
 	public static void setUIReq(String appendString){
 		ui.getOutputRequest().append(appendString);

@@ -17,17 +17,7 @@ public class ServerUI extends Thread{
      */
     @Override
     public void run(){
-        EventQueue.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    ServerUI window = new ServerUI();
-                    window.dictionaryServerFrame.setVisible(true);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        dictionaryServerFrame.setVisible(true);
     }
 
     /**

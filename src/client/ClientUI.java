@@ -1,33 +1,21 @@
 package client;
 
-import client.Client;
-import java.awt.EventQueue;
-
 import javax.swing.*;
 import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.Color;
 
-public class ClientUI extends Thread{
+public class ClientUI extends Thread {
 
 	private JFrame frmDictionary;
 	private JTextField inputMeaning;
 	private JTextField inputWord;
-	
+	private static JTextArea outputTerminal;
+
 	@Override
 	public void run() {
-		EventQueue.invokeLater(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					ClientUI window = new ClientUI();
-					window.frmDictionary.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
+		frmDictionary.setVisible(true);
 	}
 
 	/**
@@ -70,13 +58,12 @@ public class ClientUI extends Thread{
 		detailsLabel.setBounds(19, 146, 116, 26);
 		frmDictionary.getContentPane().add(detailsLabel);
 
-		JTextArea outputTerminal = new JTextArea();
-		outputTerminal.setEditable(false);
-		outputTerminal.setText("This window shows the response from the terminal. For example: Add successfully.");
-		outputTerminal.setFont(new Font("Lucida Grande", Font.PLAIN, 13));
-		outputTerminal.setBounds(272, 75, 282, 65);
+		outputTerminal = new JTextArea();
 		outputTerminal.setLineWrap(true);
 		outputTerminal.setWrapStyleWord(true);
+		outputTerminal.setFont(new Font("Lucida Grande", Font.PLAIN, 13));
+		outputTerminal.setEditable(false);
+		outputTerminal.setText("This window shows the response from the terminal. For example: Add successfully.");
 		frmDictionary.getContentPane().add(outputTerminal);
 
 		JScrollPane scrollPaneOutputTerminal = new JScrollPane();
@@ -310,7 +297,7 @@ public class ClientUI extends Thread{
 				helpContent.append("3. APPEND\nFunction: Append the entered meanings to the entered word.\nLimit: One word can be entered each time. The meanings should be separated by the comma.\n\n");
 				helpContent.append("4. DELETE\nFunction: Delete the entered word with corresponding meanings.\nLimit: One word can be deleted each time.\nWarning: The word will be completely removed. Check the History area for backup.\n\n");
 				helpContent.append("5. UPDATE\nFunction: Replace the entered word's original meanings by the entered meanings.\nLimit: One word can be attached each time. The meanings should be separated by the comma.\nWarning: The original meanings will be completely removed. Check the History area for backup.\n\n");
-				helpContent.append("6. CLEAR\nFunction: Clear all 5 areas.\n\n");
+				helpContent.append("6. CLEAR\nFunction: Clear all four areas.\n\n");
 				helpContent.append("7. HELP\nFunction: Exhibits the functions of buttons.");
 				outputContent.setText(helpContent.toString());
 			}
@@ -321,5 +308,13 @@ public class ClientUI extends Thread{
 		JLabel historyLabel = new JLabel("History");
 		historyLabel.setBounds(588, 51, 116, 16);
 		frmDictionary.getContentPane().add(historyLabel);
+	}
+
+	/**
+	 * Get the outputRequest area
+	 * @return the output terminal
+	 */
+	public static JTextArea getOutputTerminal(){
+		return outputTerminal;
 	}
 }
