@@ -3,7 +3,7 @@
 Got 13/15
 
 Comment:
-Dear xxx,
+Dear Wei,
 We appreciate your submission for the assignment 1.
 Overall, your submission is excellent. Most of the basic requirements are working properly. A server UI with logs is nice, but dictionary persistent shouldn’t require manual click of a button. Servers are often not attended. Help docs, client query history and additional operations are all good features to have.
 
